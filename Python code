@@ -1,0 +1,177 @@
+ #%% 
+2    # import packages
+3    import numpy as np
+4    import pandas as pd
+5    import matplotlib.pyplot as plt
+6    #%% 
+7    df=pd.read_csv('loan_data.csv')
+8    #%% 
+9    df
+10   #%% 
+11   # explore data
+12   df.info() 
+13   # if dat is complete then there will be 381 entries in each column
+14   # drop null values in dataset
+15   #%% 
+16   df[df.isnull().any(axis=1)]
+17   # 73 total null values
+18   #%% 
+19   df.dropna(inplace=True)
+20   df
+21   #%% 
+22   # Visualize interesting data points
+23   gender_counts=df["Gender"].value_counts()
+24   fig = plt.figure(figsize = (18,12))
+25   
+26   ax1=plt.subplot(2,3,1)
+27   plt.bar(gender_counts.index, gender_counts)
+28   
+29   ax2=plt.subplot(2,3,2)
+30   plt.bar(gen_loan.index, gen_loan)
+31   
+32   ax3=plt.subplot(2,3,3)
+33   plt.hist(df['ApplicantIncome'])
+34   
+35   ax4=plt.subplot(2,3,4)
+36   plt.hist(df['LoanAmount'])
+37   
+38   plt.show()
+39   #%% 
+40   df["Gender"].value_counts()
+41   #%% 
+42   gen_loan=df.groupby("Gender")["LoanAmount"].sum()
+43   gen_loan
+44   #%% 
+45   # prepare data for ML
+46   from sklearn.preprocessing import LabelEncoder
+47   #%% 
+48   le=LabelEncoder()
+49   #%% 
+50   # fit label encoder to text columns
+51   le.fit(df['Gender']) # female = 0 and male 1
+52   le.classes_
+53   #%% 
+54   # Input the labels into df
+55   df['Gender']=le.transform(df["Gender"])
+56   #%% 
+57   le.fit(df['Married'])
+58   le.classes_
+59   #%% 
+60   df['Married']=le.transform(df["Married"])
+61   #%% 
+62   le.fit(df['Education'])
+63   le.classes_
+64   #%% 
+65   df['Education']=le.transform(df["Education"])
+66   #%% 
+67   le.fit(df['Self_Employed'])
+68   le.classes_
+69   #%% 
+70   df['Self_Employed']=le.transform(df["Self_Employed"])
+71   #%% 
+72   le.fit(df['Property_Area'])
+73   le.classes_
+74   #%% 
+75   df['Property_Area']=le.transform(df["Property_Area"])
+76   #%% 
+77   le.fit(df['Loan_Status'])
+78   le.classes_
+79   #%% 
+80   df['Loan_Status_y']=le.transform(df["Loan_Status"])
+81   #%% 
+82   #Replace 3+ in Dependents column for df
+83   df['Dependents']=df['Dependents'].replace({'3+':'3'})
+84   df["Dependents"].astype(int)
+85   df.head()
+86   #%% 
+87   # Create Train and Test dataframes
+88   from sklearn.model_selection import train_test_split
+89   train_df,test_df=train_test_split(df,test_size=0.2)
+90   train_df
+91   #%% 
+92   test_df
+93   #%% 
+94   # Now we put all the features into a training and test dataset and the same with the target
+95   X_train = train_df.iloc[:,1:12]
+96   X_test = test_df.iloc[:,1:12]
+97   #%% 
+98   y_train = train_df.iloc[:,-1:]
+99   y_test = test_df.iloc[:,-1:]
+100  #%% 
+101  # Now we need to scale out features using StandardScaler
+102  from sklearn.preprocessing import StandardScaler
+103  StdScaler = StandardScaler()
+104  StdScaler.fit(X_train)
+105  #%% 
+106  X_train_scaled = StdScaler.transform(X_train)
+107  X_test_scaled = StdScaler.transform(X_test)
+108  #%% 
+109  # Use classifier to train model
+110  from sklearn.linear_model import SGDClassifier
+111  SGD_clf=SGDClassifier(n_jobs=-1)
+112  SGD_clf.fit(X_train_scaled,y_train)
+113  #%% 
+114  # predict if loan approvals
+115  predicted_la=SGD_clf.predict(X_test_scaled)
+116  #%% 
+117  # It worked, we have predicted values
+118  predicted_la
+119  #%% 
+120  # Scoring and confusion matrix
+121  from sklearn.metrics import recall_score, precision_score,f1_score,accuracy_score
+122  accuracy=accuracy_score(y_true=y_test,y_pred=predicted_la)
+123  accuracy
+124  # 87% of the predictions are correct
+125  #%% 
+126  rs=recall_score(y_true=y_test,y_pred=predicted_la)
+127  rs
+128  # True positive rate: ratio of positive instances that are correctly detected by the classifier. Of the true instances (someone getting a loan) the model was correct 97% of the time classified 40 out of 41 instances correctly
+129  #%% 
+130  f1=f1_score(y_true=y_test,y_pred=predicted_la)
+131  f1
+132  # F1 is harmonious mean between recall and precision 
+133  #%% 
+134  ps=precision_score(y_true=y_test,y_pred=predicted_la)
+135  ps
+136  # Precision is accuracy of positive predicitions out of 47 positive instances, we guessed 40 correctly. 85% of our positive predictions were actually correct.
+137  #%% 
+138  from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+139  con_matrix = confusion_matrix(y_test,predicted_la)
+140  con_matrixFig = ConfusionMatrixDisplay(confusion_matrix=con_matrix, display_labels=["Is not A (N)", "Is A (P)"])
+141  con_matrix
+142  #%% 
+143  fig = plt.figure()
+144  ax1=plt.subplot(1,1,1)
+145  con_matrixFig.plot(ax=ax1)
+146  plt.show()
+147  #%% 
+148  # TN is 14
+149  # TP is 40 
+150  # FN is 1
+151  # FP is 7
+152  #%% 
+153  #ROC CURVE
+154  from sklearn.metrics import roc_curve
+155  y_scores=SGD_clf.decision_function(X_test_scaled)
+156  fpr,tpr,thresholds=roc_curve(y_true=y_test,y_score=y_scores)
+157  #%% 
+158  fig = plt.figure(figsize=(10,6))
+159  
+160  ax1=plt.subplot(1,1,1)
+161  plt.plot(fpr,tpr, c="blue")
+162  plt.plot([0,1],[0,1],c="black",ls="dashed", lw=3)
+163  plt.grid(True)
+164  
+165  plt.xlabel('False Positive Rate')
+166  plt.ylabel('True Positive Rate')
+167  
+168  plt.show()
+169  # this plots true positve rate and false positive rate
+170  #%% 
+171  # AOC
+172  from sklearn.metrics import roc_auc_score
+173  roc_auc_score(y_true=y_test,y_score=y_scores)
+174  # roc_AUC score shows how this classifier is no making random guesses (random guesses are 0.5) but making correct decisions. 
+175  #%% 
+176  
+177  #%%
