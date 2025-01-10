@@ -1,1 +1,3 @@
-# ML-Loan-Approval
+This dataset that contains demographics on loan applicants. With the use of pandas and matplotlib we can clean and visualize the dataset the data and with sklearn we are able to transfrom the data so it can be used in a machine learning model. In this case,  binary classification machine learning model (SGD Classifier). 
+
+After using different metrics and scores to measure the model's capabilities, the model needs some improvment as Prcison maybe the prefered metric. The bank will want to correctly approving as many applicants as they can at the expense of possibly approving applicants who should not be. Due to that this model should be used with loan professionals to review borderline or high risk applications which will reduce the chances of issuing bad loans.
